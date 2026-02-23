@@ -1,3 +1,20 @@
+// Firebase Configuration (사용자가 직접 입력해야 함)
+const firebaseConfig = {
+  apiKey: "AIzaSyAslYpS5-yxDVr6vDAMdpMNU0qwP7MPxmM",
+  authDomain: "review-note-4e119.firebaseapp.com",
+  projectId: "review-note-4e119",
+  storageBucket: "review-note-4e119.firebasestorage.app",
+  messagingSenderId: "72838505068",
+  appId: "1:72838505068:web:dd057d2562dac960032e49"
+};
+
+// Initialize Firebase
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
+const db = firebase.firestore();
+const storage = firebase.storage();
+
 // Set today's date format for new rows globally
 Date.prototype.toDateInputValue = function () {
   var local = new Date(this);
@@ -17,11 +34,13 @@ let currentMemoContext = null; // { type: 'odap', id: 'row123', field: 'content'
 let currentCertContext = null;
 
 // Initialization
-document.addEventListener('DOMContentLoaded', () => {
-  loadData();
-  renderAllViews();
+document.addEventListener('DOMContentLoaded', async () => {
+  if (firebaseConfig.apiKey === "YOUR_API_KEY") {
+    alert("현재 Firebase가 연결되지 않았습니다. script.js 최상단의 firebaseConfig 값을 실제 프로젝트 값으로 변경해주세요.");
+  }
+
+  await loadData();
   setupEventListeners();
-  calculateBattingAverage();
 });
 
 // Profit Formatting
@@ -51,41 +70,66 @@ function navigateTo(viewId) {
   }
 }
 
-// Data Management
-function loadData() {
-  const saved = localStorage.getItem('reviewNoteData');
-  if (saved) {
-    try {
-      appData = JSON.parse(saved);
-      // Ensure all arrays exist
-      appData.odap = appData.odap || [];
-      appData.market = appData.market || [];
-      appData.mock = appData.mock || [];
-    } catch (e) {
-      console.error("데이터 로드 실패:", e);
-    }
+// Data Management (Firebase DB)
+async function loadData() {
+  if (firebaseConfig.apiKey === "YOUR_API_KEY") {
+    renderAllViews();
+    calculateBattingAverage();
+    return;
   }
+
+  try {
+    const docRef = db.collection('reviewNote').doc('mainData');
+    const doc = await docRef.get();
+    if (doc.exists) {
+      const saved = doc.data();
+      appData.odap = saved.odap || [];
+      appData.market = saved.market || [];
+      appData.mock = saved.mock || [];
+    }
+  } catch (e) {
+    console.error("데이터 로드 실패:", e);
+    alert("데이터를 가져오는 중 오류가 발생했습니다.");
+  }
+
+  renderAllViews();
+  calculateBattingAverage();
 }
 
-function saveData(type) {
+async function saveData(type) {
+  if (firebaseConfig.apiKey === "YOUR_API_KEY") {
+    alert("Firebase 설정이 필요하여 저장할 수 없습니다.");
+    return;
+  }
+
   // Sync view data to appData before saving
   syncViewToData(type);
-  localStorage.setItem('reviewNoteData', JSON.stringify(appData));
 
-  // Flash save button to indicate success
   const btn = document.querySelector(`#view-${type} .save-btn`);
   if (btn) {
     const originalText = btn.innerText;
-    btn.innerText = "저장됨!";
-    btn.style.backgroundColor = "#2E7D32";
+    btn.innerText = "저장 중...";
+    btn.disabled = true;
 
-    // 타율 업데이트를 위해
-    if (type === 'odap') calculateBattingAverage();
+    try {
+      // Firebase는 undefined 저장을 허용하지 않으므로 삭제 처리
+      const cleanData = JSON.parse(JSON.stringify(appData));
+      await db.collection('reviewNote').doc('mainData').set(cleanData);
 
-    setTimeout(() => {
+      btn.innerText = "저장됨!";
+      btn.style.backgroundColor = "#2E7D32";
+      if (type === 'odap') calculateBattingAverage();
+      setTimeout(() => {
+        btn.innerText = originalText;
+        btn.style.backgroundColor = "";
+        btn.disabled = false;
+      }, 1500);
+    } catch (e) {
+      console.error("저장 실패", e);
+      alert("저장에 실패했습니다: " + e.message);
       btn.innerText = originalText;
-      btn.style.backgroundColor = "";
-    }, 1500);
+      btn.disabled = false;
+    }
   }
 }
 
@@ -124,14 +168,13 @@ function syncViewToData(type) {
   appData[type] = newData;
 }
 
-// 타율 계산 공삭 = (실현손익 중 양수인 컬럼의 개수)/ (전체 실현손익 컬럼의 개수) * 100
+// 타율 계산
 function calculateBattingAverage() {
   const odapData = appData.odap || [];
   let totalCount = 0;
   let winCount = 0;
 
   odapData.forEach(item => {
-    // 값이 존재하고 0이 아닌 경우 배팅수로 집계 (빈칸은 미집계)
     if (item.finalProfit !== undefined && item.finalProfit !== null && item.finalProfit !== "") {
       const profit = Number(item.finalProfit);
       if (!isNaN(profit) && isFinite(profit) && String(item.finalProfit).trim() !== "") {
@@ -219,7 +262,6 @@ function createRow(type, data = null) {
       </td>
     `;
 
-    // 만약 새 행이면 즉시 데이터 모델에 푸시해둬야 모달 등에서 접근 가능
     if (!data) {
       appData.odap.push({ id: id, date: dateVal, isClosed: false });
     }
@@ -283,7 +325,6 @@ function deleteRows(type) {
       // Remove from data model
       appData[type] = appData[type].filter(item => item.id !== id);
     });
-    // Update master checkbox
     document.getElementById(`selectAll-${type}`).checked = false;
   }
 }
@@ -307,8 +348,7 @@ function toggleClose(id) {
   }
 }
 
-// 수익률 계산 로직 (산식: (전영업일 종가 - 평균매입가) * 매수량)
-// 여기서 야후파이낸스 종가(전일)를 가져와야 함.
+// 수익률 계산 로직
 async function calculateOdapYield(id) {
   const row = document.querySelector(`tr[data-id="${id}"]`);
   const ticker = row.querySelector('.col-ticker').value.trim().toUpperCase();
@@ -317,7 +357,6 @@ async function calculateOdapYield(id) {
   const yieldInput = row.querySelector('.col-yield');
   const closedBtn = row.querySelector('.col-closed');
 
-  // 마감 상태면 계산 안함
   if (closedBtn.dataset.closed === 'true') return;
 
   if (!ticker || qty === 0 || price === 0) {
@@ -333,7 +372,6 @@ async function calculateOdapYield(id) {
       const currentYield = (yfPrice - price) * qty;
       yieldInput.value = currentYield.toFixed(2);
 
-      // 색상 처리
       if (currentYield > 0) {
         yieldInput.style.color = 'var(--primary-color)';
       } else if (currentYield < 0) {
@@ -350,10 +388,7 @@ async function calculateOdapYield(id) {
   }
 }
 
-// 야후 파이낸스 가격 조회 (cors proxy 사용)
 async function getYahooFinancePrice(ticker) {
-  // CORS 회피를 위해 corsproxy.io 등 퍼블릭 프록시 사용. 
-  // 실제 프로덕션에서는 자체 백엔드 권장.
   const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1d`;
   const proxiedUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
 
@@ -364,7 +399,6 @@ async function getYahooFinancePrice(ticker) {
 
     if (data.chart && data.chart.result && data.chart.result.length > 0) {
       const result = data.chart.result[0];
-      // 현재가 혹은 전일종가 (가장 최근 메타데이터의 regularMarketPrice 사용)
       if (result.meta && result.meta.regularMarketPrice) {
         return result.meta.regularMarketPrice;
       }
@@ -376,7 +410,6 @@ async function getYahooFinancePrice(ticker) {
   }
 }
 
-// 모의투자 매수/매도 로직
 async function fetchPrice(id, action) {
   const row = document.querySelector(`tr[data-id="${id}"]`);
   const ticker = row.querySelector('.col-ticker').value.trim().toUpperCase();
@@ -410,7 +443,6 @@ function openMemo(type, id) {
   const textArea = document.getElementById('memo-text');
   const preview = document.getElementById('memo-image-preview');
 
-  // 리셋
   document.getElementById('memo-image-upload').value = '';
 
   if (item) {
@@ -428,7 +460,7 @@ function openMemo(type, id) {
   modal.classList.add('active');
 }
 
-function saveMemo() {
+async function saveMemo() {
   if (!currentMemoContext) return;
 
   const { type, id } = currentMemoContext;
@@ -441,36 +473,30 @@ function saveMemo() {
     item.memoText = textArea.value;
     const row = document.querySelector(`tr[data-id="${id}"]`);
 
-    // 이미지가 존재하고 미리보기 컨테이너가 숨겨지지 않은 경우
     if (previewImg && previewContainer.style.display !== 'none') {
       item.memoImg = previewImg.src;
-
-      // Update the tooltip in the DOM immediately
-      if (row) {
-        const container = row.querySelector('.content-btn').closest('.cert-preview-container');
-        if (container) {
-          let tooltip = container.querySelector('.cert-tooltip');
-          if (!tooltip) {
-            tooltip = document.createElement('div');
-            tooltip.className = 'cert-tooltip';
-            container.appendChild(tooltip);
-          }
-          tooltip.innerHTML = `<img src="${item.memoImg}">`;
-        }
-      }
     } else {
       item.memoImg = '';
-      // Remove tooltip if exists
-      if (row) {
-        const container = row.querySelector('.content-btn').closest('.cert-preview-container');
-        if (container) {
-          const tooltip = container.querySelector('.cert-tooltip');
-          if (tooltip) tooltip.remove();
+    }
+
+    // 호버 툴팁 DOM 갱신
+    if (row) {
+      const container = row.querySelector('.content-btn').closest('.cert-preview-container');
+      if (container) {
+        const existingTooltip = container.querySelector('.cert-tooltip');
+        if (existingTooltip) existingTooltip.remove();
+
+        if (item.memoImg) {
+          const tooltip = document.createElement('div');
+          tooltip.className = 'cert-tooltip';
+          tooltip.innerHTML = `<img src="${item.memoImg}">`;
+          container.appendChild(tooltip);
         }
       }
     }
   }
 
+  // DB 전체 저장은 사용자가 "저장" 버튼 누를 때 함
   closeModal('memo-modal');
 }
 
@@ -482,7 +508,6 @@ function openCert(id) {
   const modal = document.getElementById('cert-modal');
   const preview = document.getElementById('cert-image-preview');
 
-  // 리셋
   document.getElementById('cert-image-upload').value = '';
 
   if (item && item.certImg) {
@@ -496,39 +521,36 @@ function openCert(id) {
   modal.classList.add('active');
 }
 
-function saveCert() {
+async function saveCert() {
   if (!currentCertContext) return;
 
   const { id } = currentCertContext;
   const item = appData.odap.find(d => d.id === id);
-  const previewImg = document.querySelector('#cert-image-preview img');
+  const previewContainer = document.getElementById('cert-image-preview');
+  const previewImg = previewContainer.querySelector('img');
 
   if (item) {
-    if (previewImg) {
+    const row = document.querySelector(`tr[data-id="${id}"]`);
+
+    if (previewImg && previewContainer.style.display !== 'none') {
       item.certImg = previewImg.src;
-
-      // Update the tooltip in the DOM immediately
-      const row = document.querySelector(`tr[data-id="${id}"]`);
-      if (row) {
-        const container = row.querySelector('.cert-btn').closest('.cert-preview-container');
-        if (container) {
-          let tooltip = container.querySelector('.cert-tooltip');
-
-          if (!tooltip) {
-            tooltip = document.createElement('div');
-            tooltip.className = 'cert-tooltip';
-            container.appendChild(tooltip);
-          }
-          tooltip.innerHTML = `<img src="${item.certImg}">`;
-        }
-      }
-
     } else {
       item.certImg = '';
-      const row = document.querySelector(`tr[data-id="${id}"]`);
-      if (row) {
-        const tooltip = row.querySelector('.cert-btn').closest('.cert-preview-container')?.querySelector('.cert-tooltip');
-        if (tooltip) tooltip.remove();
+    }
+
+    // DOM 갱신
+    if (row) {
+      const container = row.querySelector('.cert-btn').closest('.cert-preview-container');
+      if (container) {
+        const existingTooltip = container.querySelector('.cert-tooltip');
+        if (existingTooltip) existingTooltip.remove();
+
+        if (item.certImg) {
+          const tooltip = document.createElement('div');
+          tooltip.className = 'cert-tooltip';
+          tooltip.innerHTML = `<img src="${item.certImg}">`;
+          container.appendChild(tooltip);
+        }
       }
     }
   }
@@ -542,7 +564,7 @@ function closeModal(modalId) {
   if (modalId === 'cert-modal') currentCertContext = null;
 }
 
-// Image Upload Handlers (File to Base64)
+// Image Upload Handlers (File to Base64 preview)
 function setupImageUpload(inputId, previewId) {
   const fileInput = document.getElementById(inputId);
   const previewContainer = document.getElementById(previewId);
@@ -562,18 +584,15 @@ function setupImageUpload(inputId, previewId) {
 
 // Event Listeners
 function setupEventListeners() {
-  // 모달 닫기 (영역 밖 클릭)
   window.addEventListener('click', (e) => {
     if (e.target.classList.contains('modal')) {
       e.target.classList.remove('active');
     }
   });
 
-  // 이미지 업로드 세팅
   setupImageUpload('memo-image-upload', 'memo-image-preview');
   setupImageUpload('cert-image-upload', 'cert-image-preview');
 
-  // 마스터 체크박스 로직
   ['odap', 'market', 'mock'].forEach(type => {
     const masterCb = document.getElementById(`selectAll-${type}`);
     if (masterCb) {
