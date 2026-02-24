@@ -32,9 +32,22 @@ let appData = {
 // State
 let currentMemoContext = null; // { type: 'odap', id: 'row123', field: 'content' }
 let currentCertContext = null;
+let isAuthenticated = false;
 
 // Initialization
 document.addEventListener('DOMContentLoaded', async () => {
+  document.body.classList.add('guest-mode'); // Start in guest mode
+  document.getElementById('auth-pwd').addEventListener('input', (e) => {
+    if (e.target.value === '5305') {
+      isAuthenticated = true;
+      document.body.classList.remove('guest-mode');
+      e.target.style.borderColor = 'var(--primary-color)';
+    } else {
+      isAuthenticated = false;
+      document.body.classList.add('guest-mode');
+      e.target.style.borderColor = 'var(--border-color)';
+    }
+  });
   if (firebaseConfig.apiKey === "YOUR_API_KEY") {
     alert("현재 Firebase가 연결되지 않았습니다. script.js 최상단의 firebaseConfig 값을 실제 프로젝트 값으로 변경해주세요.");
   }
@@ -161,6 +174,7 @@ function syncViewToData(type) {
       item.buyDate = row.querySelector('.col-buy-date').value || '';
       item.sellPrice = Number(row.querySelector('.col-sell-price').value) || 0;
       item.sellDate = row.querySelector('.col-sell-date').value || '';
+      item.realYield = row.querySelector('.col-real-yield').value || '';
     }
     newData.push(item);
   });
@@ -215,6 +229,10 @@ function renderTable(type) {
       tbody.appendChild(createRow(type, item));
     });
   }
+
+  if (type === 'mock') {
+    setTimeout(updateMockYields, 500);
+  }
 }
 
 function generateId() {
@@ -230,6 +248,7 @@ function createRow(type, data = null) {
   const dateVal = (data && data.date) || new Date().toDateInputValue();
   const memoText = (data && data.memoText) || '';
   const memoImg = (data && data.memoImg) || '';
+  const certImgs = (data && data.certImgs) || (data && data.certImg ? [data.certImg] : []);
 
   let html = `<td><input type="checkbox" class="row-checkbox"></td>`;
   html += `<td><input type="date" class="col-date" value="${dateVal}"></td>`;
@@ -238,8 +257,9 @@ function createRow(type, data = null) {
     const closed = (data && data.isClosed) || false;
     const closedClass = closed ? 'blur-cell' : '';
     const finalProfitVal = (data && data.finalProfit !== undefined && data.finalProfit !== '') ? data.finalProfit + '%' : '';
-    const certTooltip = (data && data.certImg) ? `<div class="cert-tooltip"><img src="${data.certImg}"></div>` : '';
-    const memoTooltip = memoImg ? `<div class="cert-tooltip"><img src="${memoImg}"></div>` : '';
+    const memoImgs = (data && data.memoImgs) || (memoImg ? [memoImg] : []);
+    const certTooltipHtml = certImgs.length > 0 ? `<div class="cert-tooltip">` + certImgs.map(src => `<img src="${src}" style="margin-bottom:5px;">`).join('') + `</div>` : '';
+    const memoTooltip = memoImgs.length > 0 ? `<div class="cert-tooltip">` + memoImgs.map(src => `<img src="${src}" style="margin-bottom:5px;">`).join('') + `</div>` : '';
 
     html += `
       <td><input type="text" class="col-ticker" value="${(data && data.ticker) || ''}" placeholder="티커"></td>
@@ -257,7 +277,7 @@ function createRow(type, data = null) {
       <td>
         <div class="cert-preview-container">
           <button class="cert-btn" onclick="openCert('${id}')">인증</button>
-          ${certTooltip}
+          ${certTooltipHtml}
         </div>
       </td>
     `;
@@ -267,7 +287,8 @@ function createRow(type, data = null) {
     }
   }
   else if (type === 'market') {
-    const memoTooltip = memoImg ? `<div class="cert-tooltip"><img src="${memoImg}"></div>` : '';
+    const memoImgs = (data && data.memoImgs) || (memoImg ? [memoImg] : []);
+    const memoTooltip = memoImgs.length > 0 ? `<div class="cert-tooltip">` + memoImgs.map(src => `<img src="${src}" style="margin-bottom:5px;">`).join('') + `</div>` : '';
     html += `
       <td>
         <div class="cert-preview-container">
@@ -279,7 +300,9 @@ function createRow(type, data = null) {
     if (!data) appData.market.push({ id: id, date: dateVal });
   }
   else if (type === 'mock') {
-    const memoTooltip = memoImg ? `<div class="cert-tooltip"><img src="${memoImg}"></div>` : '';
+    const memoImgs = (data && data.memoImgs) || (memoImg ? [memoImg] : []);
+    const memoTooltip = memoImgs.length > 0 ? `<div class="cert-tooltip">` + memoImgs.map(src => `<img src="${src}" style="margin-bottom:5px;">`).join('') + `</div>` : '';
+    let realYieldVal = (data && data.realYield) || '';
     html += `
       <td><input type="text" class="col-ticker" value="${(data && data.ticker) || ''}" placeholder="티커"></td>
       <td>
@@ -288,9 +311,18 @@ function createRow(type, data = null) {
         <input type="date" class="col-buy-date mock-input" value="${(data && data.buyDate) || ''}">
       </td>
       <td>
-        <button class="action-cell-btn" onclick="fetchPrice('${id}', 'sell')">매도</button>
-        <input type="number" class="col-sell-price mock-input" value="${(data && data.sellPrice) || ''}" placeholder="가격">
+        <input type="text" class="col-eval-yield mock-input readonly-input" value="" readonly placeholder="-">
+      </td>
+      <td>
+        <div style="display: flex; gap: 5px; justify-content: center;">
+          <button class="action-cell-btn" onclick="fetchPrice('${id}', 'sell')">매도</button>
+          <button class="action-cell-btn delete-btn" style="padding: 6px 8px; flex: 0 0 auto;" onclick="clearSellPrice('${id}')">X</button>
+        </div>
+        <input type="number" class="col-sell-price mock-input" value="${(data && data.sellPrice) || ''}" placeholder="가격" oninput="calculateRealYield('${id}')">
         <input type="date" class="col-sell-date mock-input" value="${(data && data.sellDate) || ''}">
+      </td>
+      <td>
+        <input type="text" class="col-real-yield mock-input readonly-input" value="${realYieldVal}" readonly placeholder="-">
       </td>
       <td>
         <div class="cert-preview-container">
@@ -428,9 +460,89 @@ async function fetchPrice(id, action) {
   if (yfPrice) {
     priceInput.value = yfPrice.toFixed(2);
     dateInput.value = new Date().toDateInputValue();
+    if (action === 'sell') calculateRealYield(id);
   } else {
     priceInput.placeholder = "조회실패";
     alert("해당 티커의 가격을 가져오지 못했습니다.");
+  }
+}
+
+// 모의투자 추가 로직
+function clearSellPrice(id) {
+  const row = document.querySelector(`tr[data-id="${id}"]`);
+  if (!row) return;
+  row.querySelector('.col-sell-price').value = '';
+  row.querySelector('.col-sell-date').value = '';
+  calculateRealYield(id);
+}
+
+function calculateRealYield(id) {
+  const row = document.querySelector(`tr[data-id="${id}"]`);
+  if (!row) return;
+  const buyPrice = Number(row.querySelector('.col-buy-price').value) || 0;
+  const sellPrice = Number(row.querySelector('.col-sell-price').value) || 0;
+  const realYieldInput = row.querySelector('.col-real-yield');
+  const evalYieldInput = row.querySelector('.col-eval-yield');
+
+  if (buyPrice > 0 && sellPrice > 0) {
+    const yieldPercent = ((sellPrice - buyPrice) / buyPrice) * 100;
+    realYieldInput.value = yieldPercent.toFixed(2) + '%';
+    if (yieldPercent > 0) realYieldInput.style.color = 'var(--primary-color)';
+    else if (yieldPercent < 0) realYieldInput.style.color = 'var(--danger-color)';
+    else realYieldInput.style.color = '';
+    evalYieldInput.classList.add('blur-cell');
+  } else {
+    realYieldInput.value = '';
+    realYieldInput.style.color = '';
+    evalYieldInput.classList.remove('blur-cell');
+  }
+}
+
+async function updateMockYields() {
+  const tbody = document.querySelector('#table-mock tbody');
+  const rows = tbody.querySelectorAll('tr');
+
+  for (const row of rows) {
+    const ticker = row.querySelector('.col-ticker').value.trim().toUpperCase();
+    const buyPrice = Number(row.querySelector('.col-buy-price').value) || 0;
+    const buyDateVal = row.querySelector('.col-buy-date').value;
+    const sellPrice = Number(row.querySelector('.col-sell-price').value) || 0;
+    const evalYieldInput = row.querySelector('.col-eval-yield');
+    const realYieldInput = row.querySelector('.col-real-yield');
+
+    // Set initial colors for real yield
+    const rawRealYield = parseFloat(realYieldInput.value);
+    if (!isNaN(rawRealYield)) {
+      if (rawRealYield > 0) realYieldInput.style.color = 'var(--primary-color)';
+      else if (rawRealYield < 0) realYieldInput.style.color = 'var(--danger-color)';
+    }
+
+    if (sellPrice > 0) {
+      evalYieldInput.classList.add('blur-cell');
+    }
+
+    let shouldCalculateEval = false;
+    if (buyPrice > 0 && ticker && buyDateVal) {
+      const buyDate = new Date(buyDateVal);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (buyDate < today) {
+        shouldCalculateEval = true;
+      }
+    }
+
+    if (shouldCalculateEval) {
+      evalYieldInput.placeholder = "조회중...";
+      const yfPrice = await getYahooFinancePrice(ticker);
+      if (yfPrice && yfPrice > 0) {
+        const yieldPercent = ((yfPrice - buyPrice) / buyPrice) * 100;
+        evalYieldInput.value = yieldPercent.toFixed(2) + '%';
+        if (yieldPercent > 0) evalYieldInput.style.color = 'var(--primary-color)';
+        else if (yieldPercent < 0) evalYieldInput.style.color = 'var(--danger-color)';
+      } else {
+        evalYieldInput.placeholder = "실패";
+      }
+    }
   }
 }
 
@@ -444,17 +556,26 @@ function openMemo(type, id) {
   const preview = document.getElementById('memo-image-preview');
 
   document.getElementById('memo-image-upload').value = '';
+  document.getElementById('memo-image-upload').disabled = false;
 
+  preview.innerHTML = '';
   if (item) {
     textArea.value = item.memoText || '';
-    if (item.memoImg) {
-      preview.innerHTML = `<img src="${item.memoImg}">`;
-      preview.style.display = 'block';
+    const imgs = item.memoImgs || (item.memoImg ? [item.memoImg] : []);
+    if (imgs.length > 0) {
+      preview.innerHTML = imgs.map(src =>
+        `<div style="position: relative; display: inline-block; flex: 0 0 30%; max-width: 30%;">
+           <img src="${src}" style="width: 100%; height: auto; display: block;">
+           <span class="delete-img-btn" onclick="this.parentElement.remove(); checkUploadLimit('memo-image-preview', 'memo-image-upload')" style="position: absolute; top:0; right:0; background: red; color: white; cursor: pointer; padding: 2px 5px; font-size: 10px;">X</span>
+         </div>`).join('');
+      preview.style.display = 'flex';
+      checkUploadLimit('memo-image-preview', 'memo-image-upload');
     } else {
-      preview.innerHTML = '';
       preview.style.display = 'none';
-
     }
+  } else {
+    textArea.value = '';
+    preview.style.display = 'none';
   }
 
   modal.classList.add('active');
@@ -467,17 +588,15 @@ async function saveMemo() {
   const item = appData[type].find(d => d.id === id);
   const textArea = document.getElementById('memo-text');
   const previewContainer = document.getElementById('memo-image-preview');
-  const previewImg = previewContainer.querySelector('img');
+
+  const previewImgs = Array.from(previewContainer.querySelectorAll('img')).map(img => img.src);
 
   if (item) {
     item.memoText = textArea.value;
     const row = document.querySelector(`tr[data-id="${id}"]`);
 
-    if (previewImg && previewContainer.style.display !== 'none') {
-      item.memoImg = previewImg.src;
-    } else {
-      item.memoImg = '';
-    }
+    item.memoImgs = previewImgs;
+    item.memoImg = previewImgs[0] || '';
 
     // 호버 툴팁 DOM 갱신
     if (row) {
@@ -486,10 +605,10 @@ async function saveMemo() {
         const existingTooltip = container.querySelector('.cert-tooltip');
         if (existingTooltip) existingTooltip.remove();
 
-        if (item.memoImg) {
+        if (item.memoImgs && item.memoImgs.length > 0) {
           const tooltip = document.createElement('div');
           tooltip.className = 'cert-tooltip';
-          tooltip.innerHTML = `<img src="${item.memoImg}">`;
+          tooltip.innerHTML = item.memoImgs.map(src => `<img src="${src}" style="margin-bottom:5px;">`).join('');
           container.appendChild(tooltip);
         }
       }
@@ -509,12 +628,23 @@ function openCert(id) {
   const preview = document.getElementById('cert-image-preview');
 
   document.getElementById('cert-image-upload').value = '';
+  document.getElementById('cert-image-upload').disabled = false;
 
-  if (item && item.certImg) {
-    preview.innerHTML = `<img src="${item.certImg}">`;
-    preview.style.display = 'block';
+  preview.innerHTML = '';
+  if (item) {
+    const imgs = item.certImgs || (item.certImg ? [item.certImg] : []);
+    if (imgs.length > 0) {
+      preview.innerHTML = imgs.map(src =>
+        `<div style="position: relative; display: inline-block; flex: 0 0 30%; max-width: 30%;">
+           <img src="${src}" style="width: 100%; height: auto; display: block;">
+           <span class="delete-img-btn" onclick="this.parentElement.remove(); checkUploadLimit('cert-image-preview', 'cert-image-upload')" style="position: absolute; top:0; right:0; background: red; color: white; cursor: pointer; padding: 2px 5px; font-size: 10px;">X</span>
+         </div>`).join('');
+      preview.style.display = 'flex';
+      checkUploadLimit('cert-image-preview', 'cert-image-upload');
+    } else {
+      preview.style.display = 'none';
+    }
   } else {
-    preview.innerHTML = '';
     preview.style.display = 'none';
   }
 
@@ -527,16 +657,14 @@ async function saveCert() {
   const { id } = currentCertContext;
   const item = appData.odap.find(d => d.id === id);
   const previewContainer = document.getElementById('cert-image-preview');
-  const previewImg = previewContainer.querySelector('img');
+
+  const previewImgs = Array.from(previewContainer.querySelectorAll('img')).map(img => img.src);
 
   if (item) {
     const row = document.querySelector(`tr[data-id="${id}"]`);
 
-    if (previewImg && previewContainer.style.display !== 'none') {
-      item.certImg = previewImg.src;
-    } else {
-      item.certImg = '';
-    }
+    item.certImgs = previewImgs;
+    item.certImg = previewImgs[0] || '';
 
     // DOM 갱신
     if (row) {
@@ -545,10 +673,10 @@ async function saveCert() {
         const existingTooltip = container.querySelector('.cert-tooltip');
         if (existingTooltip) existingTooltip.remove();
 
-        if (item.certImg) {
+        if (item.certImgs && item.certImgs.length > 0) {
           const tooltip = document.createElement('div');
           tooltip.className = 'cert-tooltip';
-          tooltip.innerHTML = `<img src="${item.certImg}">`;
+          tooltip.innerHTML = item.certImgs.map(src => `<img src="${src}" style="margin-bottom:5px;">`).join('');
           container.appendChild(tooltip);
         }
       }
@@ -564,6 +692,11 @@ function closeModal(modalId) {
   if (modalId === 'cert-modal') currentCertContext = null;
 }
 
+function checkUploadLimit(previewId, inputId) {
+  const count = document.getElementById(previewId).querySelectorAll('img').length;
+  document.getElementById(inputId).disabled = count >= 3;
+}
+
 // Image Upload Handlers (File to Base64 preview)
 function setupImageUpload(inputId, previewId) {
   const fileInput = document.getElementById(inputId);
@@ -572,15 +705,25 @@ function setupImageUpload(inputId, previewId) {
   fileInput.addEventListener('change', function (e) {
     const file = e.target.files[0];
     if (file) {
+      if (previewContainer.querySelectorAll('img').length >= 3) {
+        alert('최대 3장까지만 업로드 가능합니다.');
+        return;
+      }
       const reader = new FileReader();
       reader.onload = function (evt) {
-        previewContainer.innerHTML = `<img src="${evt.target.result}">`;
-        previewContainer.style.display = 'block';
+        const imgHtml = `<div style="position: relative; display: inline-block; flex: 0 0 30%; max-width: 30%;">
+                           <img src="${evt.target.result}" style="width: 100%; height: auto; display: block;">
+                           <span class="delete-img-btn" onclick="this.parentElement.remove(); checkUploadLimit('${previewId}', '${inputId}')" style="position: absolute; top:0; right:0; background: red; color: white; cursor: pointer; padding: 2px 5px; font-size: 10px;">X</span>
+                         </div>`;
+        previewContainer.insertAdjacentHTML('beforeend', imgHtml);
+        previewContainer.style.display = 'flex';
+        checkUploadLimit(previewId, inputId);
       };
       reader.readAsDataURL(file);
     }
   });
 }
+
 
 // Event Listeners
 function setupEventListeners() {

@@ -12,9 +12,12 @@
   <div id="app">
     <header class="main-header">
       <h1>Review Note</h1>
-      <div id="batting-average-container" class="hidden">
-        <span class="label">타율: </span>
-        <span id="batting-average" class="value">0.00%</span>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <input type="password" id="auth-pwd" placeholder="암호" class="auth-input">
+        <div id="batting-average-container" class="hidden">
+          <span class="label">타율: </span>
+          <span id="batting-average" class="value">0.00%</span>
+        </div>
       </div>
     </header>
 
@@ -110,7 +113,9 @@
                 <th>Date</th>
                 <th>티커</th>
                 <th>매수 <br><small>(가격 / 일자)</small></th>
+                <th>평가수익률</th>
                 <th>매도 <br><small>(가격 / 일자)</small></th>
+                <th>실현수익률</th>
                 <th>내용</th>
               </tr>
             </thead>
