@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Review Note</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+  <div id="app">
+    <header class="main-header">
+      <h1>Review Note</h1>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <input type="password" id="auth-pwd" placeholder="암호" class="auth-input">
+        <div id="batting-average-container" class="hidden">
+          <span class="label">타율: </span>
+          <span id="batting-average" class="value">0.00%</span>
+        </div>
+      </div>
+    </header>
+
+    <main id="main-content">
+      <!-- 메인 화면 -->
+      <section id="view-home" class="view active">
+        <div class="menu-links">
+          <button class="menu-btn" onclick="navigateTo('view-odap')">오답노트 (계좌인증)</button>
+          <button class="menu-btn" onclick="navigateTo('view-market')">시장상황</button>
+          <button class="menu-btn" onclick="navigateTo('view-mock')">모의투자 (후보군)</button>
+        </div>
+      </section>
+
+      <!-- 오답노트 화면 -->
+      <section id="view-odap" class="view">
+        <div class="view-header">
+          <h2>오답노트 (계좌인증)</h2>
+          <div class="header-actions">
+            <button class="action-btn save-btn" onclick="saveData('odap')">저장</button>
+            <button class="action-btn back-btn" onclick="navigateTo('view-home')">돌아가기</button>
+          </div>
+        </div>
+        <div class="table-container">
+          <table id="table-odap">
+            <thead>
+              <tr>
+                <th><input type="checkbox" id="selectAll-odap"></th>
+                <th>Date</th>
+                <th>티커</th>
+                <th>매수량</th>
+                <th>평균매입가</th>
+                <th>평가수익률</th>
+                <th>내용</th>
+                <th>최종실현손익</th>
+                <th>마감</th>
+                <th>인증</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Data rows will be generated here -->
+            </tbody>
+          </table>
+        </div>
+        <div class="table-actions">
+          <button class="table-btn add-btn" onclick="addRow('odap')">+</button>
+          <button class="table-btn delete-btn" onclick="deleteRows('odap')">-</button>
+        </div>
+      </section>
+
+      <!-- 시장상황 화면 -->
+      <section id="view-market" class="view">
+        <div class="view-header">
+          <h2>시장상황</h2>
+          <div class="header-actions">
+            <button class="action-btn save-btn" onclick="saveData('market')">저장</button>
+            <button class="action-btn back-btn" onclick="navigateTo('view-home')">돌아가기</button>
+          </div>
+        </div>
+        <div class="table-container">
+          <table id="table-market">
+            <thead>
+              <tr>
+                <th><input type="checkbox" id="selectAll-market"></th>
+                <th>Date</th>
+                <th>내용</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Data rows will be generated here -->
+            </tbody>
+          </table>
+        </div>
+        <div class="table-actions">
+          <button class="table-btn add-btn" onclick="addRow('market')">+</button>
+          <button class="table-btn delete-btn" onclick="deleteRows('market')">-</button>
+        </div>
+      </section>
+
+      <!-- 모의투자 화면 -->
+      <section id="view-mock" class="view">
+        <div class="view-header">
+          <h2>모의투자 (후보군)</h2>
+          <div class="header-actions">
+            <button class="action-btn save-btn" onclick="saveData('mock')">저장</button>
+            <button class="action-btn back-btn" onclick="navigateTo('view-home')">돌아가기</button>
+          </div>
+        </div>
+        <div class="table-container">
+          <table id="table-mock">
+            <thead>
+              <tr>
+                <th><input type="checkbox" id="selectAll-mock"></th>
+                <th>Date</th>
+                <th>티커</th>
+                <th>매수 <br><small>(가격 / 일자)</small></th>
+                <th>평가수익률</th>
+                <th>매도 <br><small>(가격 / 일자)</small></th>
+                <th>실현수익률</th>
+                <th>내용</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Data rows will be generated here -->
+            </tbody>
+          </table>
+        </div>
+        <div class="table-actions">
+          <button class="table-btn add-btn" onclick="addRow('mock')">+</button>
+          <button class="table-btn delete-btn" onclick="deleteRows('mock')">-</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- 메모장 모달 -->
+  <div id="memo-modal" class="modal">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closeModal('memo-modal')">&times;</span>
+      <h3>메모장</h3>
+      <div class="image-upload-container">
+        <input type="file" id="memo-image-upload" accept="image/*" class="file-input">
+        <label for="memo-image-upload" class="upload-label">
+          <span class="upload-icon">📷</span> 사진 업로드
+        </label>
+        <div id="memo-image-preview" class="image-preview"></div>
+      </div>
+      <textarea id="memo-text" placeholder="내용을 입력하세요..." rows="10"></textarea>
+      <div class="modal-actions">
+        <button class="action-btn save-btn" onclick="saveMemo()">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 인증 팝업/모달 -->
+  <div id="cert-modal" class="modal">
+    <div class="modal-content small-modal">
+      <span class="close-btn" onclick="closeModal('cert-modal')">&times;</span>
+      <h3>계좌 인증 이미지 업로드</h3>
+      <div class="image-upload-container">
+        <input type="file" id="cert-image-upload" accept="image/*" class="file-input">
+        <label for="cert-image-upload" class="upload-label">
+          <span class="upload-icon">📷</span> 사진 업로드
+        </label>
+        <div id="cert-image-preview" class="image-preview"></div>
+      </div>
+      <div class="modal-actions">
+        <button class="action-btn save-btn" onclick="saveCert()">업로드</button>
+      </div>
+    </div>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-storage-compat.js"></script>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

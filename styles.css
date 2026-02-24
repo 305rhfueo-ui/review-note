@@ -1,0 +1,636 @@
+/* CSS Variables for Dark Theme */
+:root {
+  --bg-color: #121212;
+  --panel-bg: rgba(30, 30, 30, 0.7);
+  --text-color: #e0e0e0;
+  --text-muted: #9e9e9e;
+  --primary-color: #4CAF50;
+  --primary-hover: #45a049;
+  --danger-color: #f44336;
+  --danger-hover: #d32f2f;
+  --border-color: rgba(255, 255, 255, 0.1);
+  --glass-border: 1px solid rgba(255, 255, 255, 0.05);
+  --glass-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --transition: all 0.3s ease;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 40px 20px;
+  /* Add a subtle gradient background */
+  background: radial-gradient(circle at top left, #1a1a2e, #121212);
+}
+
+#app {
+  width: 100%;
+  max-width: 1200px;
+  background: var(--panel-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: 16px;
+  overflow: hidden;
+  padding: 30px;
+}
+
+/* Header Styles */
+.main-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.main-header h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  background: linear-gradient(90deg, #4CAF50, #81C784);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -1px;
+}
+
+#batting-average-container {
+  background: rgba(76, 175, 80, 0.1);
+  padding: 10px 20px;
+  border-radius: 30px;
+  border: 1px solid rgba(76, 175, 80, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: var(--transition);
+}
+
+#batting-average-container:hover {
+  background: rgba(76, 175, 80, 0.2);
+  transform: translateY(-2px);
+}
+
+#batting-average-container .label {
+  font-size: 1rem;
+  color: var(--text-muted);
+}
+
+#batting-average-container .value {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--primary-color);
+}
+
+/* Views Setup */
+.view {
+  display: none;
+  animation: fadeIn 0.4s ease-in-out;
+}
+
+.view.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Home Menu Links */
+.menu-links {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 60px;
+  margin-bottom: 60px;
+}
+
+.menu-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: var(--glass-border);
+  color: var(--text-color);
+  padding: 30px 40px;
+  font-size: 1.5rem;
+  font-weight: 600;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: var(--transition);
+  flex: 1;
+  min-width: 250px;
+  max-width: 350px;
+  text-align: center;
+  backdrop-filter: blur(5px);
+  position: relative;
+  overflow: hidden;
+}
+
+.menu-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+  transform: translateX(-100%);
+  transition: 0.5s;
+}
+
+.menu-btn:hover::before {
+  transform: translateX(100%);
+}
+
+.menu-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* View Header */
+.view-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.view-header h2 {
+  font-size: 1.8rem;
+  font-weight: 600;
+}
+
+.header-actions {
+  display: flex;
+  gap: 15px;
+}
+
+/* Buttons */
+.action-btn {
+  padding: 10px 24px;
+  border-radius: 8px;
+  border: none;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.save-btn {
+  background-color: var(--primary-color);
+  color: white;
+  box-shadow: 0 4px 10px rgba(76, 175, 80, 0.3);
+}
+
+.save-btn:hover {
+  background-color: var(--primary-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(76, 175, 80, 0.4);
+}
+
+.back-btn {
+  background-color: transparent;
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+}
+
+.back-btn:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Tables */
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: 8px;
+  border: var(--glass-border);
+  background: rgba(0, 0, 0, 0.2);
+  margin-bottom: 20px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: center;
+  min-width: 800px;
+}
+
+th,
+td {
+  padding: 12px 10px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+th {
+  background-color: rgba(255, 255, 255, 0.03);
+  font-weight: 600;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+tr:hover {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+/* Inputs and interactive elements in table */
+input[type="text"],
+input[type="number"],
+input[type="date"] {
+  width: 100%;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-color);
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-family: var(--font-family);
+  font-size: 0.95rem;
+  text-align: center;
+  transition: var(--transition);
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.5;
+  cursor: pointer;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="date"]:focus,
+input[type="text"]:hover,
+input[type="number"]:hover,
+input[type="date"]:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  outline: none;
+}
+
+.readonly,
+input[readonly] {
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.revenue-cell {
+  font-weight: bold;
+}
+
+.positive {
+  color: #4CAF50;
+}
+
+.negative {
+  color: #f44336;
+}
+
+/* Table specific buttons */
+.content-btn,
+.action-cell-btn,
+.cert-btn,
+.close-btn-cell {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: var(--text-color);
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: var(--transition);
+}
+
+.content-btn:hover,
+.action-cell-btn:hover,
+.cert-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.table-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.table-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  font-size: 1.5rem;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: var(--transition);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.add-btn {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.add-btn:hover {
+  background-color: var(--primary-hover);
+  transform: scale(1.05);
+}
+
+.delete-btn {
+  background-color: var(--danger-color);
+  color: white;
+}
+
+.delete-btn:hover {
+  background-color: var(--danger-hover);
+  transform: scale(1.05);
+}
+
+input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--primary-color);
+}
+
+/* Modals */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  overflow: auto;
+}
+
+.modal.active {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: fadeInModal 0.3s ease;
+}
+
+@keyframes fadeInModal {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+
+  to {
+    opacity: 1;
+    backdrop-filter: blur(5px);
+  }
+}
+
+.modal-content {
+  background-color: var(--panel-bg);
+  border: var(--glass-border);
+  border-radius: 12px;
+  padding: 30px;
+  width: 90%;
+  max-width: 600px;
+  position: relative;
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.5);
+  transform: scale(0.95);
+  transition: transform 0.3s ease;
+}
+
+.modal.active .modal-content {
+  transform: scale(1);
+}
+
+.small-modal {
+  max-width: 400px;
+}
+
+.close-btn {
+  color: var(--text-muted);
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.close-btn:hover {
+  color: var(--text-color);
+}
+
+.modal-content h3 {
+  margin-bottom: 20px;
+  font-size: 1.4rem;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 10px;
+}
+
+textarea {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  padding: 15px;
+  border-radius: 8px;
+  font-family: var(--font-family);
+  font-size: 1rem;
+  resize: vertical;
+  margin-bottom: 20px;
+  transition: var(--transition);
+}
+
+textarea:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Image Upload Styling */
+.image-upload-container {
+  margin-bottom: 20px;
+}
+
+.file-input {
+  display: none;
+}
+
+.upload-label {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px dashed var(--border-color);
+  padding: 12px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: var(--transition);
+  color: var(--text-muted);
+  width: 100%;
+  text-align: center;
+}
+
+.upload-label:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-color);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.file-input:disabled+.upload-label {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.image-preview {
+  margin-top: 15px;
+  max-width: 100%;
+  border-radius: 8px;
+  display: none;
+  gap: 10px;
+  overflow-x: auto;
+}
+
+.image-preview img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Tooltip / Hover preview */
+.cert-preview-container {
+  position: relative;
+  display: inline-block;
+}
+
+.cert-tooltip {
+  visibility: hidden;
+  width: 250px;
+  background-color: #222;
+  color: #fff;
+  text-align: center;
+  border-radius: 8px;
+  padding: 5px;
+  position: absolute;
+  z-index: 10;
+  bottom: 125%;
+  left: 50%;
+  margin-left: -125px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+  border: var(--glass-border);
+}
+
+.cert-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #222 transparent transparent transparent;
+}
+
+.cert-preview-container:hover .cert-tooltip {
+  visibility: visible;
+  opacity: 1;
+}
+
+.cert-tooltip img {
+  width: 100%;
+  border-radius: 4px;
+  display: block;
+}
+
+.blur-cell {
+  filter: blur(2px);
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* Authentication styles */
+.auth-input {
+  width: 60px;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  padding: 5px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  transition: var(--transition);
+}
+
+.auth-input:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+body.guest-mode .add-btn,
+body.guest-mode .delete-btn,
+body.guest-mode .save-btn,
+body.guest-mode .action-cell-btn,
+body.guest-mode .cert-btn,
+body.guest-mode .image-upload-container,
+body.guest-mode .col-closed {
+  display: none !important;
+}
+
+body.guest-mode input:not(#auth-pwd),
+body.guest-mode textarea,
+body.guest-mode select {
+  pointer-events: none;
+  background-color: transparent !important;
+}
+
+body.guest-mode .table-container {
+  pointer-events: none;
+}
+
+body.guest-mode .cert-preview-container {
+  pointer-events: auto;
+  /* 메모 버튼 등은 hover 툴팁용으로 살려두기 */
+}
+
+body.guest-mode .content-btn {
+  pointer-events: auto;
+  /* 메모 창은 열 수 있도록 */
+}
+
+/* 하지만 메모창 내부 텍스트는 수정 불가 */
+body.guest-mode #memo-modal textarea {
+  pointer-events: none;
+}
