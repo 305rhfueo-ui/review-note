@@ -591,9 +591,9 @@ function openMemo(type, id) {
     const imgs = item.memoImgs || (item.memoImg ? [item.memoImg] : []);
     if (imgs.length > 0) {
       preview.innerHTML = imgs.map(src =>
-        `<div style="position: relative; display: inline-block; flex: 0 0 30%; max-width: 30%;">
-           <img src="${src}" style="width: 100%; height: auto; display: block;">
-           <span class="delete-img-btn" onclick="this.parentElement.remove(); checkUploadLimit('memo-image-preview', 'memo-image-upload')" style="position: absolute; top:0; right:0; background: red; color: white; cursor: pointer; padding: 2px 5px; font-size: 10px;">X</span>
+        `<div style="position: relative; display: block; width: 100%; margin-bottom: 20px;">
+           <img src="${src}" style="width: 100%; height: auto; display: block; border-radius: 8px;">
+           <span class="delete-img-btn" onclick="this.parentElement.remove(); checkUploadLimit('memo-image-preview', 'memo-image-upload')" style="position: absolute; top: 10px; right: 10px; background: rgba(255,0,0,0.8); color: white; cursor: pointer; padding: 5px 10px; font-size: 14px; border-radius: 4px;">X</span>
          </div>`).join('');
       preview.style.display = 'flex';
       checkUploadLimit('memo-image-preview', 'memo-image-upload');
@@ -663,9 +663,9 @@ function openCert(id) {
     const imgs = item.certImgs || (item.certImg ? [item.certImg] : []);
     if (imgs.length > 0) {
       preview.innerHTML = imgs.map(src =>
-        `<div style="position: relative; display: inline-block; flex: 0 0 30%; max-width: 30%;">
-           <img src="${src}" style="width: 100%; height: auto; display: block;">
-           <span class="delete-img-btn" onclick="this.parentElement.remove(); checkUploadLimit('cert-image-preview', 'cert-image-upload')" style="position: absolute; top:0; right:0; background: red; color: white; cursor: pointer; padding: 2px 5px; font-size: 10px;">X</span>
+        `<div style="position: relative; display: block; width: 100%; margin-bottom: 20px;">
+           <img src="${src}" style="width: 100%; height: auto; display: block; border-radius: 8px;">
+           <span class="delete-img-btn" onclick="this.parentElement.remove(); checkUploadLimit('cert-image-preview', 'cert-image-upload')" style="position: absolute; top: 10px; right: 10px; background: rgba(255,0,0,0.8); color: white; cursor: pointer; padding: 5px 10px; font-size: 14px; border-radius: 4px;">X</span>
          </div>`).join('');
       preview.style.display = 'flex';
       checkUploadLimit('cert-image-preview', 'cert-image-upload');
@@ -739,9 +739,9 @@ function setupImageUpload(inputId, previewId) {
       }
       const reader = new FileReader();
       reader.onload = function (evt) {
-        const imgHtml = `<div style="position: relative; display: inline-block; flex: 0 0 30%; max-width: 30%;">
-                           <img src="${evt.target.result}" style="width: 100%; height: auto; display: block;">
-                           <span class="delete-img-btn" onclick="this.parentElement.remove(); checkUploadLimit('${previewId}', '${inputId}')" style="position: absolute; top:0; right:0; background: red; color: white; cursor: pointer; padding: 2px 5px; font-size: 10px;">X</span>
+        const imgHtml = `<div style="position: relative; display: block; width: 100%; margin-bottom: 20px;">
+                           <img src="${evt.target.result}" style="width: 100%; height: auto; display: block; border-radius: 8px;">
+                           <span class="delete-img-btn" onclick="this.parentElement.remove(); checkUploadLimit('${previewId}', '${inputId}')" style="position: absolute; top: 10px; right: 10px; background: rgba(255,0,0,0.8); color: white; cursor: pointer; padding: 5px 10px; font-size: 14px; border-radius: 4px;">X</span>
                          </div>`;
         previewContainer.insertAdjacentHTML('beforeend', imgHtml);
         previewContainer.style.display = 'flex';

@@ -512,11 +512,14 @@ textarea:focus {
 
 .image-preview {
   margin-top: 15px;
-  max-width: 100%;
+  width: 100%;
   border-radius: 8px;
   display: none;
-  gap: 10px;
-  overflow-x: auto;
+  flex-direction: column;
+  gap: 15px;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding-right: 10px;
 }
 
 .image-preview img {
@@ -533,17 +536,17 @@ textarea:focus {
 
 .cert-tooltip {
   visibility: hidden;
-  width: 250px;
+  width: 450px;
   background-color: #222;
   color: #fff;
   text-align: center;
   border-radius: 8px;
-  padding: 5px;
+  padding: 10px;
   position: absolute;
   z-index: 10;
   bottom: 125%;
   left: 50%;
-  margin-left: -125px;
+  margin-left: -225px;
   opacity: 0;
   transition: opacity 0.3s;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
