@@ -88,11 +88,7 @@ function applyGuestModeDOM() {
       if (!el.classList.contains('readonly-input') && !el.classList.contains('col-yield')) {
         el.removeAttribute('readonly');
       }
-      if (el.type === 'checkbox') {
-        if (!el.classList.contains('row-file-chk')) {
-          el.disabled = true;
-        }
-      }
+      if (el.type === 'checkbox') el.disabled = true;
       if (el.type === 'file') el.disabled = true;
     } else {
       // 기존에 원래 readonly여야 하는 애들은 예외 처리 (.readonly-input 나 .col-yield 등)
@@ -294,8 +290,8 @@ function createRow(type, data = null) {
   let html = `<td><input type="checkbox" class="row-checkbox"></td>`;
   html += `<td><input type="date" class="col-date" value="${dateVal}"></td>`;
 
-  const fileChecked = (data && data.fileName) ? 'checked' : '';
-  const fileTd = `<td><input type="checkbox" class="file-chk row-file-chk" onclick="openFileModal('${type}', '${id}'); return false;" ${fileChecked}></td>`;
+  const fileChecked = (data && data.fileName) ? 'has-file' : '';
+  const fileTd = `<td><button class="file-box-btn ${fileChecked}" onclick="openFileModal('${type}', '${id}'); return false;"></button></td>`;
 
   if (type === 'odap') {
     const closed = (data && data.isClosed) || false;
@@ -798,11 +794,11 @@ function handleFileSelect(event) {
       nameDisplay.innerText = file.name;
       downloadBtn.disabled = false;
 
-      // Update checkbox
+      // Update button visual
       const row = document.querySelector(`#table-${type} tr[data-id="${id}"]`);
       if (row) {
-        const chk = row.querySelector('.row-file-chk');
-        if (chk) chk.checked = true;
+        const btn = row.querySelector('.file-box-btn');
+        if (btn) btn.classList.add('has-file');
       }
     };
     reader.readAsDataURL(file);

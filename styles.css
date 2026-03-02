@@ -374,6 +374,38 @@ input[type="checkbox"] {
   accent-color: var(--primary-color);
 }
 
+/* File Box Button (replaces checkbox) */
+.file-box-btn {
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  border: 2px solid var(--border-color);
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  transition: var(--transition);
+  padding: 0;
+}
+
+.file-box-btn:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.file-box-btn.has-file {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.file-box-btn.has-file::after {
+  content: '✓';
+  color: white;
+  font-size: 14px;
+  font-weight: bold;
+}
+
 /* Modals */
 .modal {
   display: none;
@@ -628,9 +660,10 @@ body.guest-mode .cert-preview-container {
   /* 메모 버튼 등은 hover 툴팁용으로 살려두기 */
 }
 
-body.guest-mode .content-btn {
+body.guest-mode .content-btn,
+body.guest-mode .file-box-btn {
   pointer-events: auto;
-  /* 메모 창은 열 수 있도록 */
+  /* 메모 창은 열 수 있도록, 파일 박스는 클릭할 수 있도록 */
 }
 
 /* 하지만 메모창 내부 텍스트는 수정 불가 */
