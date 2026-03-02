@@ -130,6 +130,20 @@ async function loadData() {
       appData.market = saved.market || [];
       appData.mock = saved.mock || [];
       appData.industry = saved.industry || [];
+
+      // 문자열로 저장된 nested array 복원
+      ['odap', 'market', 'mock', 'industry'].forEach(type => {
+        if (appData[type]) {
+          appData[type].forEach(item => {
+            if (typeof item.memoImgs === 'string') {
+              try { item.memoImgs = JSON.parse(item.memoImgs); } catch (e) { }
+            }
+            if (typeof item.certImgs === 'string') {
+              try { item.certImgs = JSON.parse(item.certImgs); } catch (e) { }
+            }
+          });
+        }
+      });
     }
   } catch (e) {
     console.error("데이터 로드 실패:", e);
@@ -158,6 +172,17 @@ async function saveData(type) {
     try {
       // Firebase는 undefined 저장을 허용하지 않으므로 삭제 처리
       const cleanData = JSON.parse(JSON.stringify(appData));
+
+      // Firebase Firestore nested array 지원 안됨문제 해결
+      ['odap', 'market', 'mock', 'industry'].forEach(type => {
+        if (cleanData[type]) {
+          cleanData[type].forEach(item => {
+            if (Array.isArray(item.memoImgs)) item.memoImgs = JSON.stringify(item.memoImgs);
+            if (Array.isArray(item.certImgs)) item.certImgs = JSON.stringify(item.certImgs);
+          });
+        }
+      });
+
       await db.collection('reviewNote').doc('mainData').set(cleanData);
 
       btn.innerText = "저장됨!";
