@@ -26,12 +26,14 @@ Date.prototype.toDateInputValue = function () {
 let appData = {
   odap: [],
   market: [],
-  mock: []
+  mock: [],
+  industry: []
 };
 
 // State
 let currentMemoContext = null; // { type: 'odap', id: 'row123', field: 'content' }
 let currentCertContext = null;
+let currentFileContext = null;
 let isAuthenticated = false;
 
 // Initialization
@@ -82,7 +84,15 @@ function applyGuestModeDOM() {
   allInputs.forEach(el => {
     if (isGuest) {
       el.setAttribute('readonly', true);
-      if (el.type === 'checkbox') el.disabled = true;
+      // 기존에 원래 readonly여야 하는 애들은 예외 처리 (.readonly-input 나 .col-yield 등)
+      if (!el.classList.contains('readonly-input') && !el.classList.contains('col-yield')) {
+        el.removeAttribute('readonly');
+      }
+      if (el.type === 'checkbox') {
+        if (!el.classList.contains('row-file-chk')) {
+          el.disabled = true;
+        }
+      }
       if (el.type === 'file') el.disabled = true;
     } else {
       // 기존에 원래 readonly여야 하는 애들은 예외 처리 (.readonly-input 나 .col-yield 등)
@@ -123,6 +133,7 @@ async function loadData() {
       appData.odap = saved.odap || [];
       appData.market = saved.market || [];
       appData.mock = saved.mock || [];
+      appData.industry = saved.industry || [];
     }
   } catch (e) {
     console.error("데이터 로드 실패:", e);
@@ -191,6 +202,9 @@ function syncViewToData(type) {
       item.isClosed = row.querySelector('.col-closed').dataset.closed === 'true';
     } else if (type === 'market') {
       item.date = row.querySelector('.col-date').value;
+    } else if (type === 'industry') {
+      item.date = row.querySelector('.col-date').value;
+      item.title = row.querySelector('.col-title').value;
     } else if (type === 'mock') {
       item.date = row.querySelector('.col-date').value;
       item.ticker = row.querySelector('.col-ticker').value;
@@ -241,6 +255,7 @@ function renderAllViews() {
   renderTable('odap');
   renderTable('market');
   renderTable('mock');
+  renderTable('industry');
 }
 
 // Rendering Rows
@@ -279,6 +294,9 @@ function createRow(type, data = null) {
   let html = `<td><input type="checkbox" class="row-checkbox"></td>`;
   html += `<td><input type="date" class="col-date" value="${dateVal}"></td>`;
 
+  const fileChecked = (data && data.fileName) ? 'checked' : '';
+  const fileTd = `<td><input type="checkbox" class="file-chk row-file-chk" onclick="openFileModal('${type}', '${id}'); return false;" ${fileChecked}></td>`;
+
   if (type === 'odap') {
     const closed = (data && data.isClosed) || false;
     const closedClass = closed ? 'blur-cell' : '';
@@ -306,6 +324,7 @@ function createRow(type, data = null) {
           ${certTooltipHtml}
         </div>
       </td>
+      ${fileTd}
     `;
 
     if (!data) {
@@ -322,6 +341,7 @@ function createRow(type, data = null) {
           ${memoTooltip}
         </div>
       </td>
+      ${fileTd}
     `;
     if (!data) appData.market.push({ id: id, date: dateVal });
   }
@@ -356,8 +376,24 @@ function createRow(type, data = null) {
           ${memoTooltip}
         </div>
       </td>
+      ${fileTd}
     `;
     if (!data) appData.mock.push({ id: id, date: dateVal });
+  }
+  else if (type === 'industry') {
+    const memoImgs = (data && data.memoImgs) || (memoImg ? [memoImg] : []);
+    const memoTooltip = memoImgs.length > 0 ? `<div class="cert-tooltip">` + memoImgs.map(src => `<img src="${src}" style="margin-bottom:5px;">`).join('') + `</div>` : '';
+    html += `
+      <td><input type="text" class="col-title" value="${(data && data.title) || ''}" maxlength="30" placeholder="제목 (30자 이내)"></td>
+      <td>
+        <div class="cert-preview-container">
+          <button class="content-btn" onclick="openMemo('${type}', '${id}')">메모 보기/작성</button>
+          ${memoTooltip}
+        </div>
+      </td>
+      ${fileTd}
+    `;
+    if (!data) appData.industry.push({ id: id, date: dateVal });
   }
 
   tr.innerHTML = html;
@@ -718,6 +754,74 @@ function closeModal(modalId) {
   document.getElementById(modalId).classList.remove('active');
   if (modalId === 'memo-modal') currentMemoContext = null;
   if (modalId === 'cert-modal') currentCertContext = null;
+  if (modalId === 'file-modal') currentFileContext = null;
+}
+
+// 파일 모달 로직
+function openFileModal(type, id) {
+  currentFileContext = { type, id };
+  const item = appData[type].find(d => d.id === id);
+
+  const modal = document.getElementById('file-modal');
+  const nameDisplay = document.getElementById('file-name-display');
+  const downloadBtn = document.getElementById('file-download-btn');
+  const uploadInput = document.getElementById('file-upload-input');
+
+  uploadInput.value = '';
+
+  if (item && item.fileName) {
+    nameDisplay.innerText = item.fileName;
+    downloadBtn.disabled = false;
+  } else {
+    nameDisplay.innerText = '업로드된 파일이 없습니다.';
+    downloadBtn.disabled = true;
+  }
+
+  modal.classList.add('active');
+}
+
+function handleFileSelect(event) {
+  const file = event.target.files[0];
+  if (!file || !currentFileContext) return;
+
+  const { type, id } = currentFileContext;
+  const item = appData[type].find(d => d.id === id);
+
+  if (item) {
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      item.fileName = file.name;
+      item.fileData = e.target.result; // base64 encoded string
+
+      const nameDisplay = document.getElementById('file-name-display');
+      const downloadBtn = document.getElementById('file-download-btn');
+      nameDisplay.innerText = file.name;
+      downloadBtn.disabled = false;
+
+      // Update checkbox
+      const row = document.querySelector(`#table-${type} tr[data-id="${id}"]`);
+      if (row) {
+        const chk = row.querySelector('.row-file-chk');
+        if (chk) chk.checked = true;
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+function downloadFile() {
+  if (!currentFileContext) return;
+  const { type, id } = currentFileContext;
+  const item = appData[type].find(d => d.id === id);
+
+  if (item && item.fileName && item.fileData) {
+    const a = document.createElement('a');
+    a.href = item.fileData;
+    a.download = item.fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
 }
 
 function checkUploadLimit(previewId, inputId) {
@@ -764,7 +868,7 @@ function setupEventListeners() {
   setupImageUpload('memo-image-upload', 'memo-image-preview');
   setupImageUpload('cert-image-upload', 'cert-image-preview');
 
-  ['odap', 'market', 'mock'].forEach(type => {
+  ['odap', 'market', 'mock', 'industry'].forEach(type => {
     const masterCb = document.getElementById(`selectAll-${type}`);
     if (masterCb) {
       masterCb.addEventListener('change', function (e) {

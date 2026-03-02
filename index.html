@@ -28,6 +28,7 @@
           <button class="menu-btn" onclick="navigateTo('view-odap')">오답노트 (계좌인증)</button>
           <button class="menu-btn" onclick="navigateTo('view-market')">시장상황</button>
           <button class="menu-btn" onclick="navigateTo('view-mock')">모의투자 (후보군)</button>
+          <button class="menu-btn" onclick="navigateTo('view-industry')">주목산업등</button>
         </div>
       </section>
 
@@ -54,6 +55,7 @@
                 <th>최종실현손익</th>
                 <th>마감</th>
                 <th>인증</th>
+                <th>파일</th>
               </tr>
             </thead>
             <tbody>
@@ -83,6 +85,7 @@
                 <th><input type="checkbox" id="selectAll-market"></th>
                 <th>Date</th>
                 <th>내용</th>
+                <th>파일</th>
               </tr>
             </thead>
             <tbody>
@@ -117,6 +120,7 @@
                 <th>매도 <br><small>(가격 / 일자)</small></th>
                 <th>실현수익률</th>
                 <th>내용</th>
+                <th>파일</th>
               </tr>
             </thead>
             <tbody>
@@ -129,7 +133,52 @@
           <button class="table-btn delete-btn" onclick="deleteRows('mock')">-</button>
         </div>
       </section>
+
+      <!-- 주목산업등 화면 -->
+      <section id="view-industry" class="view">
+        <div class="view-header">
+          <h2>주목산업등</h2>
+          <div class="header-actions">
+            <button class="action-btn save-btn" onclick="saveData('industry')">저장</button>
+            <button class="action-btn back-btn" onclick="navigateTo('view-home')">돌아가기</button>
+          </div>
+        </div>
+        <div class="table-container">
+          <table id="table-industry">
+            <thead>
+              <tr>
+                <th><input type="checkbox" id="selectAll-industry"></th>
+                <th>Date</th>
+                <th>제목</th>
+                <th>내용</th>
+                <th>파일</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Data rows will be generated here -->
+            </tbody>
+          </table>
+        </div>
+        <div class="table-actions">
+          <button class="table-btn add-btn" onclick="addRow('industry')">+</button>
+          <button class="table-btn delete-btn" onclick="deleteRows('industry')">-</button>
+        </div>
+      </section>
     </main>
+  </div>
+
+  <!-- 파일 모달 -->
+  <div id="file-modal" class="modal">
+    <div class="modal-content small-modal">
+      <span class="close-btn" onclick="closeModal('file-modal')">&times;</span>
+      <h3>파일 관리</h3>
+      <div class="file-action-container" style="display: flex; gap: 10px; justify-content: center; margin: 20px 0;">
+        <input type="file" id="file-upload-input" class="file-input" onchange="handleFileSelect(event)">
+        <button class="action-btn save-btn" onclick="document.getElementById('file-upload-input').click()">업로드</button>
+        <button class="action-btn back-btn" id="file-download-btn" onclick="downloadFile()" disabled>다운</button>
+      </div>
+      <div id="file-name-display" style="text-align: center; color: var(--text-muted); margin-bottom: 20px;"></div>
+    </div>
   </div>
 
   <!-- 메모장 모달 -->
