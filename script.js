@@ -817,12 +817,12 @@ function handleFileSelect(event) {
     downloadBtn.disabled = true;
     uploadBtn.disabled = true;
 
-    const storageRef = storage.ref('files/' + Date.now() + '_' + file.name);
-
-    storageRef.put(file).then((snapshot) => {
-      snapshot.ref.getDownloadURL().then((downloadURL) => {
+    // 압축 없이 텍스트 변환만 하되, 보통 파일은 크기가 클 수 있으므로 경고 
+    if (file.size < 800000) { // 대충 800KB 이하만 허용
+      const reader = new FileReader();
+      reader.onload = function (e) {
         item.fileName = file.name;
-        item.fileUrl = downloadURL; // Store URL instead of Base64 Data
+        item.fileData = e.target.result; // base64 encoded string
 
         nameDisplay.innerText = file.name;
         downloadBtn.disabled = false;
@@ -834,16 +834,14 @@ function handleFileSelect(event) {
           const btn = row.querySelector('.file-box-btn');
           if (btn) btn.classList.add('has-file');
         }
-      }).catch((e) => {
-        console.error("URL 가져오기 에러:", e);
-        nameDisplay.innerText = 'URL 발급 실패';
-        uploadBtn.disabled = false;
-      });
-    }).catch((e) => {
-      console.error("파일 업로드 에러:", e);
-      nameDisplay.innerText = '파일 업로드 실패';
-      uploadBtn.disabled = false;
-    });
+      };
+      reader.readAsDataURL(file);
+    } else {
+      alert("파일 크기가 800KB를 초과할 수 있어 업로드가 제한됩니다. 텍스트 위주로 된 작은 파일만 올려주세요.");
+      nameDisplay.innerText = '용량 초과 오류';
+      downloadBtn.disabled = true;
+      uploadBtn.disabled = true;
+    }
   }
 }
 
@@ -868,13 +866,50 @@ function downloadFile() {
     }
   }
 }
-
 function checkUploadLimit(previewId, inputId) {
   const count = document.getElementById(previewId).querySelectorAll('img').length;
   document.getElementById(inputId).disabled = count >= 3;
 }
 
-// Image Upload Handlers (File to Firebase Storage)
+// Image Compress Handler
+function compressImage(file, maxWidth, maxHeight, quality, callback) {
+  const reader = new FileReader();
+  reader.readAsDataURL(file);
+  reader.onload = function (event) {
+    const img = new Image();
+    img.src = event.target.result;
+    img.onload = function () {
+      let width = img.width;
+      let height = img.height;
+
+      // Calculate new dimensions
+      if (width > height) {
+        if (width > maxWidth) {
+          height = Math.round((height *= maxWidth / width));
+          width = maxWidth;
+        }
+      } else {
+        if (height > maxHeight) {
+          width = Math.round((width *= maxHeight / height));
+          height = maxHeight;
+        }
+      }
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, width, height);
+
+      // Compress into JPEG (quality 0.0 ~ 1.0)
+      const dataUrl = canvas.toDataURL("image/jpeg", quality);
+      callback(dataUrl);
+    };
+  };
+}
+
+// Image Upload Handlers (File to Base64 preview with Compression)
 function setupImageUpload(inputId, previewId) {
   const fileInput = document.getElementById(inputId);
   const previewContainer = document.getElementById(previewId);
@@ -889,33 +924,22 @@ function setupImageUpload(inputId, previewId) {
 
       // Add loading text temporarily
       const loadingText = document.createElement('div');
-      loadingText.innerText = "업로드 중...";
+      loadingText.innerText = "압축 중...";
       loadingText.style.textAlign = "center";
       loadingText.id = "temp-uploading-" + Date.now();
       previewContainer.appendChild(loadingText);
       previewContainer.style.display = 'flex';
 
-      const storageRef = storage.ref('images/' + Date.now() + '_' + file.name);
+      // Compress image (Max width 800px, quality 60%)
+      compressImage(file, 800, 800, 0.6, function (compressedDataUrl) {
+        document.getElementById(loadingText.id)?.remove(); // Remove loading text
 
-      storageRef.put(file).then((snapshot) => {
-        snapshot.ref.getDownloadURL().then((downloadURL) => {
-          document.getElementById(loadingText.id)?.remove(); // Remove loading text
-
-          const imgHtml = `<div style="position: relative; display: block; width: 100%; margin-bottom: 20px;">
-                             <img src="${downloadURL}" style="width: 100%; height: auto; display: block; border-radius: 8px;">
-                             <span class="delete-img-btn" onclick="this.parentElement.remove(); checkUploadLimit('${previewId}', '${inputId}')" style="position: absolute; top: 10px; right: 10px; background: rgba(255,0,0,0.8); color: white; cursor: pointer; padding: 5px 10px; font-size: 14px; border-radius: 4px;">X</span>
-                           </div>`;
-          previewContainer.insertAdjacentHTML('beforeend', imgHtml);
-          checkUploadLimit(previewId, inputId);
-        }).catch((e) => {
-          console.error("이미지 URL 가져오기 에러:", e);
-          document.getElementById(loadingText.id)?.remove();
-          alert("이미지 주소를 가져오는데 실패했습니다.");
-        });
-      }).catch((e) => {
-        console.error("이미지 업로드 에러:", e);
-        document.getElementById(loadingText.id)?.remove();
-        alert("이미지 업로드에 실패했습니다.");
+        const imgHtml = `<div style="position: relative; display: block; width: 100%; margin-bottom: 20px;">
+                           <img src="${compressedDataUrl}" style="width: 100%; height: auto; display: block; border-radius: 8px;">
+                           <span class="delete-img-btn" onclick="this.parentElement.remove(); checkUploadLimit('${previewId}', '${inputId}')" style="position: absolute; top: 10px; right: 10px; background: rgba(255,0,0,0.8); color: white; cursor: pointer; padding: 5px 10px; font-size: 14px; border-radius: 4px;">X</span>
+                         </div>`;
+        previewContainer.insertAdjacentHTML('beforeend', imgHtml);
+        checkUploadLimit(previewId, inputId);
       });
     }
   });
