@@ -809,24 +809,41 @@ function handleFileSelect(event) {
   const item = appData[type].find(d => d.id === id);
 
   if (item) {
-    const reader = new FileReader();
-    reader.onload = function (e) {
-      item.fileName = file.name;
-      item.fileData = e.target.result; // base64 encoded string
+    const downloadBtn = document.getElementById('file-download-btn');
+    const nameDisplay = document.getElementById('file-name-display');
+    const uploadBtn = document.querySelector('#file-modal .save-btn'); // 업로드 버튼
 
-      const nameDisplay = document.getElementById('file-name-display');
-      const downloadBtn = document.getElementById('file-download-btn');
-      nameDisplay.innerText = file.name;
-      downloadBtn.disabled = false;
+    nameDisplay.innerText = '업로드 중...';
+    downloadBtn.disabled = true;
+    uploadBtn.disabled = true;
 
-      // Update button visual
-      const row = document.querySelector(`#table-${type} tr[data-id="${id}"]`);
-      if (row) {
-        const btn = row.querySelector('.file-box-btn');
-        if (btn) btn.classList.add('has-file');
-      }
-    };
-    reader.readAsDataURL(file);
+    const storageRef = storage.ref('files/' + Date.now() + '_' + file.name);
+
+    storageRef.put(file).then((snapshot) => {
+      snapshot.ref.getDownloadURL().then((downloadURL) => {
+        item.fileName = file.name;
+        item.fileUrl = downloadURL; // Store URL instead of Base64 Data
+
+        nameDisplay.innerText = file.name;
+        downloadBtn.disabled = false;
+        uploadBtn.disabled = false;
+
+        // Update button visual
+        const row = document.querySelector(`#table-${type} tr[data-id="${id}"]`);
+        if (row) {
+          const btn = row.querySelector('.file-box-btn');
+          if (btn) btn.classList.add('has-file');
+        }
+      }).catch((e) => {
+        console.error("URL 가져오기 에러:", e);
+        nameDisplay.innerText = 'URL 발급 실패';
+        uploadBtn.disabled = false;
+      });
+    }).catch((e) => {
+      console.error("파일 업로드 에러:", e);
+      nameDisplay.innerText = '파일 업로드 실패';
+      uploadBtn.disabled = false;
+    });
   }
 }
 
@@ -835,13 +852,20 @@ function downloadFile() {
   const { type, id } = currentFileContext;
   const item = appData[type].find(d => d.id === id);
 
-  if (item && item.fileName && item.fileData) {
-    const a = document.createElement('a');
-    a.href = item.fileData;
-    a.download = item.fileName;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+  // Fallback for old base64 strings or new URLs
+  if (item && item.fileName) {
+    if (item.fileData) {
+      // 기존 Base64 데이터 다운로드 방식
+      const a = document.createElement('a');
+      a.href = item.fileData;
+      a.download = item.fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } else if (item.fileUrl) {
+      // 신규 URL 다운로드 방식 (새 창 열기)
+      window.open(item.fileUrl, '_blank');
+    }
   }
 }
 
@@ -850,7 +874,7 @@ function checkUploadLimit(previewId, inputId) {
   document.getElementById(inputId).disabled = count >= 3;
 }
 
-// Image Upload Handlers (File to Base64 preview)
+// Image Upload Handlers (File to Firebase Storage)
 function setupImageUpload(inputId, previewId) {
   const fileInput = document.getElementById(inputId);
   const previewContainer = document.getElementById(previewId);
@@ -862,17 +886,37 @@ function setupImageUpload(inputId, previewId) {
         alert('최대 3장까지만 업로드 가능합니다.');
         return;
       }
-      const reader = new FileReader();
-      reader.onload = function (evt) {
-        const imgHtml = `<div style="position: relative; display: block; width: 100%; margin-bottom: 20px;">
-                           <img src="${evt.target.result}" style="width: 100%; height: auto; display: block; border-radius: 8px;">
-                           <span class="delete-img-btn" onclick="this.parentElement.remove(); checkUploadLimit('${previewId}', '${inputId}')" style="position: absolute; top: 10px; right: 10px; background: rgba(255,0,0,0.8); color: white; cursor: pointer; padding: 5px 10px; font-size: 14px; border-radius: 4px;">X</span>
-                         </div>`;
-        previewContainer.insertAdjacentHTML('beforeend', imgHtml);
-        previewContainer.style.display = 'flex';
-        checkUploadLimit(previewId, inputId);
-      };
-      reader.readAsDataURL(file);
+
+      // Add loading text temporarily
+      const loadingText = document.createElement('div');
+      loadingText.innerText = "업로드 중...";
+      loadingText.style.textAlign = "center";
+      loadingText.id = "temp-uploading-" + Date.now();
+      previewContainer.appendChild(loadingText);
+      previewContainer.style.display = 'flex';
+
+      const storageRef = storage.ref('images/' + Date.now() + '_' + file.name);
+
+      storageRef.put(file).then((snapshot) => {
+        snapshot.ref.getDownloadURL().then((downloadURL) => {
+          document.getElementById(loadingText.id)?.remove(); // Remove loading text
+
+          const imgHtml = `<div style="position: relative; display: block; width: 100%; margin-bottom: 20px;">
+                             <img src="${downloadURL}" style="width: 100%; height: auto; display: block; border-radius: 8px;">
+                             <span class="delete-img-btn" onclick="this.parentElement.remove(); checkUploadLimit('${previewId}', '${inputId}')" style="position: absolute; top: 10px; right: 10px; background: rgba(255,0,0,0.8); color: white; cursor: pointer; padding: 5px 10px; font-size: 14px; border-radius: 4px;">X</span>
+                           </div>`;
+          previewContainer.insertAdjacentHTML('beforeend', imgHtml);
+          checkUploadLimit(previewId, inputId);
+        }).catch((e) => {
+          console.error("이미지 URL 가져오기 에러:", e);
+          document.getElementById(loadingText.id)?.remove();
+          alert("이미지 주소를 가져오는데 실패했습니다.");
+        });
+      }).catch((e) => {
+        console.error("이미지 업로드 에러:", e);
+        document.getElementById(loadingText.id)?.remove();
+        alert("이미지 업로드에 실패했습니다.");
+      });
     }
   });
 }
